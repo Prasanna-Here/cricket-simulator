@@ -1,4 +1,4 @@
-function initializeMatchState(preState){
+function initializeMatchState(preState) {
     const players = [
         { name: "Player1", type: "anchor" },
         { name: "Player2", type: "power" },
@@ -12,13 +12,16 @@ function initializeMatchState(preState){
         { name: "Player10", type: "tail" },
         { name: "Player11", type: "tail" }
     ];
-    
-    const wicketsDown=preState.wicketsDown;
-    const wicketsLeft=10-wicketsDown;
 
-    const nonStrikerIndex=wicketsDown;
-    const strikerIndex=wicketsDown+1;
-    const nextIndex=wicketsDown+2;
+    const wicketsDown = preState.wicketsDown;
+    const wicketsLeft = 10 - wicketsDown;
+
+    const nonStrikerIndex = wicketsDown;
+    const strikerIndex = wicketsDown + 1;
+    const nextIndex = wicketsDown + 2;
+
+    const oversRemaining = preState.ballsLeft / 6;
+    const matchOverNumber = 20 - oversRemaining;
 
     return {
         runsNeeded: preState.runsNeeded,
@@ -28,8 +31,12 @@ function initializeMatchState(preState){
         strikerIndex,
         nonStrikerIndex,
         nextIndex,
-        allOut: false 
-    }
+        allOut: false,
+        currentOverIndex: 0,
+        oversRemaining,
+        matchOverNumber,
+        bowler: "medium"
+    };
 }
 
-module.exports={initializeMatchState};
+module.exports = { initializeMatchState };
