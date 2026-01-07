@@ -189,6 +189,22 @@ function simulateBall(state, choice) {
 
     }
 
+    if (newState.runsNeeded <= 0) {
+    newState.runsNeeded = 0;
+    return {
+        ...newState,
+        outcome: "you_win",
+        matchOver: true
+    }
+    }
+    if (newState.ballsLeft <= 0 && newState.runsNeeded > 0) {
+    return {
+        ...newState,
+        outcome: "you_lose",
+        matchOver: true
+    };
+}
+
     return { ...newState, outcome };
 }
 
