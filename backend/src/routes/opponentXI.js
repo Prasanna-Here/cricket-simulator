@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getBestXI } = require("../logic/selectBestXI");
+const { selectBestXI } = require("../logic/selectBestXI");
 
 router.post("/", (req, res) => {
     const { opponentTeam } = req.body;
@@ -9,7 +9,7 @@ router.post("/", (req, res) => {
         return res.status(400).json({ error: "Opponent team required" });
     }
 
-    const bestXI = getBestXI(opponentTeam);
+    const bestXI = selectBestXI(opponentTeam);
 
     if (bestXI.length === 0) {
         return res.status(404).json({ error: "Invalid opponent team" });

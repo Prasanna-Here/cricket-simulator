@@ -3,26 +3,26 @@ const router = express.Router();
 const IPLTeams = require("../teams");
 
 router.post("/", (req, res) => {
-    const { teamId, selectedPlayers } = req.body;
+    const { team, selectedXI } = req.body;
 
-    if (!teamId || !selectedPlayers) {
-        return res.status(400).json({ error: "teamId and selectedPlayers required" });
+    if (!team || !selectedXI) {
+        return res.status(400).json({ error: "team and selectedXI required" });
     }
 
-    const teamKey = teamId.toUpperCase();
+    const teamKey = team.toUpperCase();
 
     if (!IPLTeams[teamKey]) {
-        return res.status(404).json({ error: "Invalid teamId" });
+        return res.status(404).json({ error: "Invalid team" });
     }
 
     const squad = IPLTeams[teamKey];
 
-    if (selectedPlayers.length !== 11) {
+    if (selectedXI.length !== 11) {
         return res.status(400).json({ error: "You must select exactly 11 players" });
     }
 
     // Validate selected players exist in squad
-    const isValid = selectedPlayers.every(p =>
+    const isValid = selectedXI.every(p =>
         squad.some(s => s.name === p.name)
     );
 
@@ -34,7 +34,7 @@ router.post("/", (req, res) => {
     return res.json({
         message: "Playing XI selected successfully",
         team: teamKey,
-        playingXI: selectedPlayers
+        playingXI: selectedXI
     });
 });
 
