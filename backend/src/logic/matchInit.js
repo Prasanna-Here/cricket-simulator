@@ -1,41 +1,45 @@
-function initializeMatchState(preState) {
-    const players = [
-        { name: "Player1", type: "anchor" },
-        { name: "Player2", type: "power" },
-        { name: "Player3", type: "anchor" },
-        { name: "Player4", type: "anchor" },
-        { name: "Player5", type: "power" },
-        { name: "Player6", type: "power" },
-        { name: "Player7", type: "power" },
-        { name: "Player8", type: "tail" },
-        { name: "Player9", type: "tail" },
-        { name: "Player10", type: "tail" },
-        { name: "Player11", type: "tail" }
-    ];
+// src/logic/matchInit.js
 
+const getBowlerForDifficulty = require("./getBowlerForDifficulty");
+
+function initializeMatchState(preState, selectedPlayers, opponentXI) {
     const wicketsDown = preState.wicketsDown;
-    const wicketsLeft = 10 - wicketsDown;
 
-    const nonStrikerIndex = wicketsDown;
-    const strikerIndex = wicketsDown + 1;
-    const nextIndex = wicketsDown + 2;
+    let strikerIndex = wicketsDown;
+    let nonStrikerIndex = wicketsDown + 1;
+    let nextIndex = wicketsDown + 2;
 
-    const oversRemaining = preState.ballsLeft / 6;
+    if (strikerIndex >= selectedPlayers.length - 1) {
+        strikerIndex = selectedPlayers.length - 2;
+        nonStrikerIndex = selectedPlayers.length - 1;
+        nextIndex = selectedPlayers.length;
+    }
+
+    const oversRemaining = Math.floor(preState.ballsLeft / 6);
     const matchOverNumber = 20 - oversRemaining;
+
+    const firstDiff = "medium";
+    const firstBowler = getBowlerForDifficulty(opponentXI, firstDiff);
 
     return {
         runsNeeded: preState.runsNeeded,
         ballsLeft: preState.ballsLeft,
-        wicketsLeft,
-        players,
+        wicketsLeft: 10 - wicketsDown,
+
+        players: selectedPlayers,
+        opponentXI,
+
         strikerIndex,
         nonStrikerIndex,
         nextIndex,
         allOut: false,
+
         currentOverIndex: 0,
         oversRemaining,
         matchOverNumber,
-        bowler: "medium"
+
+        bowlerDifficulty: firstDiff,
+        currentBowler: firstBowler ? firstBowler.name : "Unknown"
     };
 }
 
