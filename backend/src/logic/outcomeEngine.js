@@ -1,6 +1,6 @@
 // src/logic/outcomeEngine.js
 
-const probabilityTable = require("./pobTable");
+const probabilityTable = require("./probTable");
 const randomBowlerDifficulty = require("./randomBowlerDifficulty");
 const getBowlerForDifficulty = require("./getBowlerForDifficulty");
 const generateCommentary = require("./commentary");

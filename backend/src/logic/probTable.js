@@ -1,4 +1,4 @@
-// src/logic/pobTable.js
+// src/logic/probTable.js
 
 const baseTable = {
     power: {
