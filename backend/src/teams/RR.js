@@ -14,4 +14,5 @@ module.exports = [
   { name: "Joe Root", type: "anchor", confidence: 0.65 },
   { name: "Adam Zampa", type: "bowler", confidence: 0.40 },
   { name: "Jason Holder", type: "allrounder", confidence: 0.50 }
+
 ];
