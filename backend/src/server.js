@@ -17,7 +17,7 @@ const opponentXIRoute = require("./routes/opponentXI");
 app.use("/startMatch",startMatchRoute);
 app.use("/teams", teamSelectRoute);
 app.use('/simulate',simulateRoute);
-app.use("/playing11", playingXIRoute);
+app.use("/playingXI", playingXIRoute);
 app.use("/opponentXI", opponentXIRoute);
 app.use("/match", matchSetupRoute);
 
