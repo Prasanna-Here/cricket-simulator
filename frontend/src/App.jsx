@@ -1,14 +1,21 @@
-import { useEffect } from "react";
-import { getTeams } from "./api/matchApi";
+import TeamSelect from "./components/TeamSelect";
+import PlayingXI from "./components/PlayingXI";
+import Scenario from "./components/ScenarioForm";
+import Match from "./components/MatchScreen";
+import { useMatch } from "./context/MatchContext";
+import MatchScreen from "./components/MatchScreen";
 
 function App() {
-  useEffect(() => {
-    getTeams().then(res => {
-      console.log("Teams:", res.data);
-    });
-  }, []);
+  const { screen } = useMatch();
 
-  return <h1>Cricket Simulator</h1>;
+  return (
+    <div style={{ padding: "20px" }}>
+      {screen === "team" && <TeamSelect />}
+      {screen === "playingXI" && <PlayingXI />}
+      {screen === "scenario" && <Scenario />}
+      {screen === "match" && <MatchScreen/>}
+    </div>
+  );
 }
 
 export default App;

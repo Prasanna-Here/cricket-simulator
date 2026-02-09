@@ -3,6 +3,7 @@ const router = express.Router();
 const IPLTeams = require("../teams");
 
 router.post("/", (req, res) => {
+
     const { team, selectedXI } = req.body;
 
     if (!team || !selectedXI) {
@@ -17,7 +18,7 @@ router.post("/", (req, res) => {
 
     const squad = IPLTeams[teamKey];
 
-    if (selectedXI.length !== 11) {
+    if (!Array.isArray(selectedXI) || selectedXI.length !== 11) {
         return res.status(400).json({ error: "You must select exactly 11 players" });
     }
 
@@ -30,7 +31,22 @@ router.post("/", (req, res) => {
         return res.status(400).json({ error: "Invalid players selected" });
     }
 
-    // Success response
+    /* =========================
+       AT LEAST 3 BOWLERS RULE
+    ========================= */
+
+    const bowlingOptions = selectedXI.filter(p => {
+        console.log(p.name, p.type);
+        return p.type?.toLowerCase() === "bowler";
+    });
+
+
+    if (bowlingOptions.length < 3) {
+        return res.status(400).json({
+            error: "At least 3 bowlers are required in Playing XI"
+        });
+    }
+
     return res.json({
         message: "Playing XI selected successfully",
         team: teamKey,

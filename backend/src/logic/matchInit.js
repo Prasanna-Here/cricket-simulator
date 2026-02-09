@@ -3,44 +3,55 @@
 const getBowlerForDifficulty = require("./getBowlerForDifficulty");
 
 function initializeMatchState(preState, selectedPlayers, opponentXI) {
-    const wicketsDown = preState.wicketsDown;
+  const wicketsDown = preState.wicketsDown;
 
-    let strikerIndex = wicketsDown;
-    let nonStrikerIndex = wicketsDown + 1;
-    let nextIndex = wicketsDown + 2;
+  let strikerIndex = wicketsDown;
+  let nonStrikerIndex = wicketsDown + 1;
+  let nextIndex = wicketsDown + 2;
 
-    if (strikerIndex >= selectedPlayers.length - 1) {
-        strikerIndex = selectedPlayers.length - 2;
-        nonStrikerIndex = selectedPlayers.length - 1;
-        nextIndex = selectedPlayers.length;
-    }
+  if (strikerIndex >= selectedPlayers.length - 1) {
+    strikerIndex = selectedPlayers.length - 2;
+    nonStrikerIndex = selectedPlayers.length - 1;
+    nextIndex = selectedPlayers.length;
+  }
 
-    const oversRemaining = Math.floor(preState.ballsLeft / 6);
-    const matchOverNumber = 20 - oversRemaining;
+  const oversRemaining = Math.floor(preState.ballsLeft / 6);
+  const matchOverNumber = 20 - oversRemaining;
 
-    const firstDiff = "medium";
-    const firstBowler = getBowlerForDifficulty(opponentXI, firstDiff);
+  const firstDiff = "medium";
+  const firstBowler = getBowlerForDifficulty(opponentXI, firstDiff);
 
-    return {
-        runsNeeded: preState.runsNeeded,
-        ballsLeft: preState.ballsLeft,
-        wicketsLeft: 10 - wicketsDown,
+  // ✅ ADD RUN & BALL TRACKING
+  const playersWithStats = selectedPlayers.map(p => ({
+    ...p,
+    runs: 0,
+    balls: 0,
+    out: false
+  }));
 
-        players: selectedPlayers,
-        opponentXI,
+  return {
+    runsNeeded: preState.runsNeeded,
+    ballsLeft: preState.ballsLeft,
+    wicketsLeft: 10 - wicketsDown,
 
-        strikerIndex,
-        nonStrikerIndex,
-        nextIndex,
-        allOut: false,
+    players: playersWithStats,
+    opponentXI,
 
-        currentOverIndex: 0,
-        oversRemaining,
-        matchOverNumber,
+    strikerIndex,
+    nonStrikerIndex,
+    nextIndex,
+    allOut: false,
 
-        bowlerDifficulty: firstDiff,
-        currentBowler: firstBowler ? firstBowler.name : "Unknown"
-    };
+    currentOverIndex: 0,
+    oversRemaining,
+    matchOverNumber,
+
+    bowlerDifficulty: firstDiff,
+    currentBowler: firstBowler ? firstBowler.name : "Unknown",
+
+    attackStreak: 0,
+    matchOver: false
+  };
 }
 
 module.exports = { initializeMatchState };

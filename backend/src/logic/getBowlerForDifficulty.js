@@ -1,29 +1,32 @@
 // src/logic/getBowlerForDifficulty.js
 
-function getBowlerForDifficulty(opponentXI, difficulty, lastBowler) {
-    const bowlers = opponentXI.filter(p =>
-        p.type === "bowler" || p.type === "allrounder"
-    );
+function getBowlerForDifficulty(opponentXI, difficulty, lastBowlerName) {
+  if (!Array.isArray(opponentXI)) return null;
 
-    if (!bowlers.length) return null;
+  // Only players who can bowl
+  const bowlers = opponentXI.filter(p =>
+    p.type === "bowler" || p.type === "allrounder"
+  );
 
-    // Sort highest confidence → lowest
-    const sorted = [...bowlers].sort((a, b) => b.confidence - a.confidence);
+  if (bowlers.length === 0) return null;
 
-    let selected;
+  // Remove last over bowler if possible
+  let available = bowlers;
+  if (lastBowlerName && bowlers.length > 1) {
+    available = bowlers.filter(b => b.name !== lastBowlerName);
+  }
 
-    // Pick by difficulty
-    if (difficulty === "hard") selected = sorted[0];
-    else if (difficulty === "medium") selected = sorted[Math.floor(sorted.length / 2)] || sorted[0];
-    else selected = sorted[sorted.length - 1];
+  // Sort by confidence (high → low)
+  const sorted = [...available].sort(
+    (a, b) => (b.confidence || 0) - (a.confidence || 0)
+  );
 
-    // Prevent same bowler bowling consecutive overs
-    if (lastBowler && selected.name === lastBowler) {
-        const alternative = sorted.find(b => b.name !== lastBowler);
-        if (alternative) selected = alternative;
-    }
+  // Pick based on difficulty
+  if (difficulty === "hard") return sorted[0];
+  if (difficulty === "medium") return sorted[Math.floor(sorted.length / 2)] || sorted[0];
+  if (difficulty === "easy") return sorted[sorted.length - 1];
 
-    return selected;
+  return sorted[0];
 }
 
 module.exports = getBowlerForDifficulty;

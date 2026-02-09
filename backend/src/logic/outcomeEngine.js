@@ -1,176 +1,255 @@
-// src/logic/outcomeEngine.js
-
 const probabilityTable = require("./probTable");
 const randomBowlerDifficulty = require("./randomBowlerDifficulty");
 const getBowlerForDifficulty = require("./getBowlerForDifficulty");
 const generateCommentary = require("./commentary");
+const calculateWinProbability = require("./winProbability");
 
-// Normalize helper
+/* =========================
+   HELPERS
+========================= */
+
 function normalize(prob) {
-    const total = prob.reduce((s, e) => s + e.prob, 0);
-    return prob.map(e => ({ ...e, prob: e.prob / total }));
+  const total = prob.reduce((s, e) => s + e.prob, 0);
+  return prob.map(e => ({ ...e, prob: e.prob / total }));
 }
 
-// Random pick helper
 function pickOutcome(prob) {
-    let acc = 0;
-    const r = Math.random();
-    for (let p of prob) {
-        acc += p.prob;
-        if (r <= acc) return p.outcome;
-    }
+  let acc = 0;
+  const r = Math.random();
+  for (let p of prob) {
+    acc += p.prob;
+    if (r <= acc) return p.outcome;
+  }
 }
 
-// Strike change
 function swapStrike(state) {
-    const t = state.strikerIndex;
-    state.strikerIndex = state.nonStrikerIndex;
-    state.nonStrikerIndex = t;
+  const t = state.strikerIndex;
+  state.strikerIndex = state.nonStrikerIndex;
+  state.nonStrikerIndex = t;
 }
 
-// Format output for frontend
-function formatResponse(state, outcome, commentary) {
-    return {
-        success: true,
-        ballSummary: {
-            outcome,
-            runs:
-                outcome === "six" ? 6 :
-                outcome === "four" ? 4 :
-                outcome === "two" ? 2 :
-                outcome === "one" ? 1 : 0,
-            wicket: outcome === "wicket",
-            commentary
-        },
-        matchState: {
-            ...state,
-            striker: state.players[state.strikerIndex]?.name || null,
-            nonStriker: state.players[state.nonStrikerIndex]?.name || null,
-            currentBowler: state.currentBowler
-        }
-    };
+/* =========================
+   END MATCH (FIXED)
+========================= */
+function endMatch(state, result, message) {
+  return {
+    success: true,
+    ballSummary: {
+      outcome: result,
+      runs: 0,
+      wicket: false,
+      commentary: message
+    },
+    matchState: {
+      ...state,
+      matchOver: true,
+      outcome: result,
+      winProbability: calculateWinProbability(state)
+    }
+  };
 }
+
+/* =========================
+   FORMAT RESPONSE (FIXED)
+========================= */
+function formatResponse(updatedState, outcome, commentary) {
+  return {
+    success: true,
+    ballSummary: {
+      outcome,
+      runs: { six: 6, four: 4, two: 2, one: 1 }[outcome] || 0,
+      wicket: outcome === "wicket",
+      commentary
+    },
+    matchState: {
+      ...updatedState,
+      striker: updatedState.players[updatedState.strikerIndex]?.name || null,
+      nonStriker: updatedState.players[updatedState.nonStrikerIndex]?.name || null,
+      currentBowler: updatedState.currentBowler || "Unknown",
+      winProbability: calculateWinProbability(updatedState)
+    }
+  };
+}
+
+/* =========================
+   MAIN ENGINE
+========================= */
 
 function simulateBall(state, choice) {
-    
-    // PRE-MATCH / END CHECKS ------------------------
-    if (state.runsNeeded <= 0) {
-        return formatResponse(state, "you_win", "You already won the match!");
-    }
 
-    if (state.ballsLeft <= 0 || state.allOut) {
-        return formatResponse(state, "you_lose", "Innings over — you lost!");
-    }
+  /* ---------- SAFETY ---------- */
+  if (!state || !Array.isArray(state.players)) {
+    return { success: false, error: "Invalid match state" };
+  }
 
-    let newState = { ...state };
-    const striker = newState.players[newState.strikerIndex];
+  if (state.matchOver) return state;
 
-    // Adjust type for special roles
-    const effectiveType = striker.type === "keeper" ? "anchor" :
-                          striker.type === "allrounder" ? "anchor" :
-                          striker.type;
+  /* ---------- MATCH END ---------- */
+  if (state.runsNeeded <= 0)
+    return endMatch(state, "you_win", "🏆 You chased the target!");
 
-    // Copy base probability
-    let prob = probabilityTable[effectiveType][choice].map(e => ({ ...e }));
+  if (state.ballsLeft <= 0 || state.allOut)
+    return endMatch(state, "you_lose", "💔 Innings over!");
 
-    // Confidence affects hitting/wicket chances
-    prob = prob.map(e => {
-        let p = e.prob;
-        if (e.outcome === "six" || e.outcome === "four") p += striker.confidence * 0.1;
-        if (e.outcome === "wicket") p -= striker.confidence * 0.1;
-        return { ...e, prob: p };
-    });
+  let newState = {
+    ...state,
+    attackStreak: state.attackStreak || 0
+  };
 
-    // Apply bowler diff
-    const diff = newState.bowlerDifficulty;
-    prob = prob.map(e => {
-        if (e.outcome === "six" || e.outcome === "four") {
-            if (diff === "hard") return { ...e, prob: e.prob * 0.7 };
-            if (diff === "easy") return { ...e, prob: e.prob * 1.3 };
-        }
-        if (e.outcome === "wicket") {
-            if (diff === "hard") return { ...e, prob: e.prob * 1.3 };
-            if (diff === "easy") return { ...e, prob: e.prob * 0.7 };
-        }
-        return e;
-    });
+  const pressure = newState.runsNeeded / newState.ballsLeft;
 
-    // Normalize final probabilities
-    prob = normalize(prob);
+  /* =========================
+     RISK ALL
+  ========================= */
+  if (choice === "risk") {
+    const riskProb = normalize([
+      { outcome: "six", prob: 0.40 },
+      { outcome: "four", prob: 0.20 },
+      { outcome: "wicket", prob: 0.35 },
+      { outcome: "dot", prob: 0.05 }
+    ]);
 
-    // Determine outcome
-    const outcome = pickOutcome(prob);
+    const outcome = pickOutcome(riskProb);
+    newState.ballsLeft--;
 
-    newState.ballsLeft -= 1;
-
-    // RUNS LOGIC
-    const runsMap = { six: 6, four: 4, two: 2, one: 1 };
-    if (runsMap[outcome]) newState.runsNeeded -= runsMap[outcome];
-
+    if (outcome === "six") newState.runsNeeded -= 6;
+    if (outcome === "four") newState.runsNeeded -= 4;
     if (newState.runsNeeded < 0) newState.runsNeeded = 0;
 
-    // CONFIDENCE UPDATE
-    if (outcome === "six" || outcome === "four") striker.confidence += 0.05;
-    else if (outcome === "one" || outcome === "two") striker.confidence += 0.01;
-    else if (outcome === "dot") striker.confidence -= 0.03;
-    else if (outcome === "wicket") striker.confidence = 0.2;
-
-    striker.confidence = Math.min(Math.max(striker.confidence, 0.1), 0.95);
-
-    // STRIKE CHANGE
-    if (outcome === "one" || outcome === "two") swapStrike(newState);
-
-    // WICKET LOGIC
     if (outcome === "wicket") {
-        newState.wicketsLeft -= 1;
-        if (newState.wicketsLeft <= 0) {
-            newState.allOut = true;
-        } else {
-            newState.strikerIndex = newState.nextIndex;
-            newState.nextIndex++;
-        }
+      newState.wicketsLeft--;
+      if (newState.wicketsLeft <= 0)
+        return endMatch(newState, "you_lose", "💀 Risk backfired!");
+      newState.strikerIndex = newState.nextIndex++;
     }
 
-    // END OF OVER HANDLING
-    if (newState.ballsLeft % 6 === 0) {
-        swapStrike(newState);
+    if (newState.runsNeeded <= 0)
+      return endMatch(newState, "you_win", "🔥 RISK PAID OFF!");
 
-        newState.currentOverIndex++;
-        newState.matchOverNumber++;
-        newState.oversRemaining--;
+    return formatResponse(newState, outcome, "🟥 RISK ALL!");
+  }
 
-        // Select difficulty
-        const newDiff = randomBowlerDifficulty(newState.matchOverNumber);
-        newState.bowlerDifficulty = newDiff;
+  /* =========================
+     NORMAL BALL
+  ========================= */
 
-        // Select bowler by confidence
-        const bowlerObj = getBowlerForDifficulty(newState.opponentXI, newDiff);
-        newState.currentBowler = bowlerObj ? bowlerObj.name : "Unknown";
-    }
+  const striker = newState.players[newState.strikerIndex];
+  const type = probabilityTable[striker.type] ? striker.type : "anchor";
 
-    // MATCH RESULT CHECKS (POST BALL)
-    if (newState.runsNeeded <= 0) {
-        return formatResponse(
-            newState,
-            "you_win",
-            "🏆 You chased the target!"
-        );
-    }
+  if (!probabilityTable[type]?.[choice]) {
+    return formatResponse(newState, "dot", "⚠️ Invalid shot");
+  }
 
-    if (newState.ballsLeft <= 0 && newState.runsNeeded > 0) {
-        return formatResponse(
-            newState,
-            "you_lose",
-            "💔 You couldn’t reach the target."
-        );
-    }
+  let prob = probabilityTable[type][choice].map(e => ({ ...e }));
 
-    // NORMAL BALL RETURN
-    return formatResponse(
-        newState,
-        outcome,
-        generateCommentary(outcome, striker, newState.currentBowler)
+  /* ATTACK STREAK */
+  if (choice === "attack") newState.attackStreak++;
+  else newState.attackStreak = 0;
+
+  if (newState.attackStreak >= 3) {
+    prob = prob.map(e => {
+      if (e.outcome === "six") return { ...e, prob: e.prob * 0.6 };
+      if (e.outcome === "four") return { ...e, prob: e.prob * 0.7 };
+      if (e.outcome === "wicket") return { ...e, prob: e.prob * 1.5 };
+      return e;
+    });
+  }
+
+  /* ROTATE SAFETY */
+  if (choice === "rotate") {
+    prob = prob.map(e =>
+      e.outcome === "wicket" ? { ...e, prob: e.prob * 0.5 } : e
     );
+  }
+
+  /* CLUTCH */
+  const isClutch = newState.ballsLeft <= 12 && pressure >= 2.5;
+  if (isClutch && choice === "attack") {
+    prob = prob.map(e => {
+      if (e.outcome === "six") return { ...e, prob: e.prob * 1.3 };
+      if (e.outcome === "four") return { ...e, prob: e.prob * 1.15 };
+      if (e.outcome === "wicket") return { ...e, prob: e.prob * 0.85 };
+      return e;
+    });
+  }
+
+  /* BOWLER DIFFICULTY */
+  const diff = newState.bowlerDifficulty || "medium";
+  prob = prob.map(e => {
+    if (e.outcome === "six" || e.outcome === "four") {
+      if (diff === "hard") return { ...e, prob: e.prob * 0.7 };
+      if (diff === "easy") return { ...e, prob: e.prob * 1.3 };
+    }
+    if (e.outcome === "wicket") {
+      if (diff === "hard") return { ...e, prob: e.prob * 1.3 };
+      if (diff === "easy") return { ...e, prob: e.prob * 0.7 };
+    }
+    return e;
+  });
+
+  prob = normalize(prob);
+  const outcome = pickOutcome(prob);
+  
+  const runMap = { six: 6, four: 4, two: 2, one: 1 };
+  // runs for batsman
+  // ✅ BALL FACED
+  striker.balls += 1;
+
+  // ✅ RUNS
+  if (runMap[outcome]) {
+    striker.runs += runMap[outcome];
+    newState.runsNeeded -= runMap[outcome];
+  }
+
+  // Clamp
+  if (newState.runsNeeded < 0) newState.runsNeeded = 0;
+
+  /* APPLY OUTCOME */
+  newState.ballsLeft--;
+  if (runMap[outcome]) newState.runsNeeded -= runMap[outcome];
+  if (newState.runsNeeded < 0) newState.runsNeeded = 0;
+
+  if (outcome === "one") swapStrike(newState);
+
+  if (outcome === "wicket") {
+    striker.out = true;
+    newState.wicketsLeft--;
+
+    if (newState.wicketsLeft <= 0) {
+      newState.allOut = true;
+      return endMatch(newState, "you_lose", "💔 All out!");
+    }
+
+    newState.strikerIndex = newState.nextIndex++;
+  }
+
+
+  /* OVER END */
+  if (newState.ballsLeft % 6 === 0 && newState.ballsLeft > 0) {
+    swapStrike(newState);
+    newState.matchOverNumber++;
+    const newDiff = randomBowlerDifficulty(newState.matchOverNumber);
+    newState.bowlerDifficulty = newDiff;
+    const bowler = getBowlerForDifficulty(
+      newState.opponentXI,
+      newDiff,
+      newState.currentBowler
+    );
+    newState.currentBowler = bowler?.name || "Unknown";
+  }
+
+  /* FINAL CHECK */
+  if (newState.runsNeeded <= 0)
+    return endMatch(newState, "you_win", "🏆 You chased it!");
+
+  if (newState.ballsLeft <= 0)
+    return endMatch(newState, "you_lose", "💔 Time’s up!");
+
+  return formatResponse(
+    newState,
+    outcome,
+    generateCommentary(outcome, striker, newState.currentBowler)
+  );
 }
 
 module.exports = { simulateBall };

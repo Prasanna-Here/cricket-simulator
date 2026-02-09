@@ -69,7 +69,7 @@ const baseTable = {
 };
 
 // Keepers behave like anchors
-baseTable.keeper = baseTable.anchor;
+baseTable.keeper = baseTable.power;
 
 // All-rounders behave like anchors (can tune later)
 baseTable.allrounder = baseTable.anchor;
