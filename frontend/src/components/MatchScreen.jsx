@@ -47,110 +47,107 @@ function MatchScreen() {
      UI
   ========================= */
   return (
-    <div style={{ padding: "20px", maxWidth: "600px" }}>
-      <h1>🏏 Match On</h1>
-
-      <h2>
-        {matchState.runsNeeded} runs needed • {matchState.ballsLeft} balls left
-      </h2>
-
-      <p>Wickets left: {matchState.wicketsLeft}</p>
-
-      {/* =========================
-          WIN PROBABILITY
-      ========================= */}
-      <div style={{ margin: "15px 0" }}>
-        <strong>Win Probability: {winProb}%</strong>
-        <div
-          style={{
-            height: "12px",
-            width: "100%",
-            background: "#ddd",
-            borderRadius: "6px",
-            overflow: "hidden",
-            marginTop: "5px"
-          }}
-        >
-          <div
-            style={{
-              height: "100%",
-              width: `${winProb}%`,
-              background:
-                winProb > 60
-                  ? "#2ecc71"
-                  : winProb > 30
-                    ? "#f1c40f"
-                    : "#e74c3c",
-              transition: "width 0.4s ease"
-            }}
-          />
+    <div className="card">
+      <div className="cardInner">
+        <div className="rowWrap">
+          <div>
+            <h2 className="sectionTitle">Match on</h2>
+            <p className="sectionSub">
+              {matchState.runsNeeded} runs needed • {matchState.ballsLeft} balls left • Wickets left:{" "}
+              {matchState.wicketsLeft}
+            </p>
+          </div>
+          <span className="spacer" />
+          <span className="pill pillStrong">Win prob: {winProb}%</span>
         </div>
+
+        <div style={{ marginTop: 10 }}>
+          <div className="barOuter" aria-label="Win probability bar">
+            <div
+              className="barInner"
+              style={{
+                width: `${winProb}%`,
+                background:
+                  winProb > 60
+                    ? "rgba(34, 197, 94, 0.95)"
+                    : winProb > 30
+                      ? "rgba(245, 158, 11, 0.95)"
+                      : "rgba(239, 68, 68, 0.95)",
+              }}
+            />
+          </div>
+        </div>
+
+        <hr className="divider" />
+
+        <div className="grid2">
+          <div className="callout">
+            <div className="rowWrap">
+              <span className="badge badgeAnchor">Striker</span>
+              <span className="pill pillStrong">
+                {striker.name} — {striker.runs} ({striker.balls})
+              </span>
+              <span className="spacer" />
+              <span className="pill">Confidence</span>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <ConfidenceBar value={striker.confidence} />
+            </div>
+          </div>
+
+          <div className="callout">
+            <div className="rowWrap">
+              <span className="badge badgePower">Non-striker</span>
+              <span className="pill pillStrong">
+                {nonStriker.name} — {nonStriker.runs} ({nonStriker.balls})
+              </span>
+              <span className="spacer" />
+              <span className="pill">Confidence</span>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <ConfidenceBar value={nonStriker.confidence} />
+            </div>
+          </div>
+        </div>
+
+        {lastBall && (
+          <div className="callout calloutInfo">
+            <strong>Last ball:</strong> {String(lastBall.outcome || "").toUpperCase()}
+            <br />
+            <em>{lastBall.commentary}</em>
+          </div>
+        )}
+
+        {!matchState.matchOver && (
+          <div className="rowWrap" style={{ marginTop: 16 }}>
+            <button className="btn btnPrimary" onClick={() => playBall("attack")} disabled={playing}>
+              Attack
+            </button>
+            <button className="btn" onClick={() => playBall("rotate")} disabled={playing}>
+              Rotate
+            </button>
+            <button className="btn" onClick={() => playBall("defend")} disabled={playing}>
+              Defend
+            </button>
+            <button className="btn" onClick={() => playBall("risk")} disabled={playing}>
+              Risk All
+            </button>
+            <span className="spacer" />
+            {playing && <span className="pill">Simulating…</span>}
+          </div>
+        )}
+
+        {matchState.matchOver && (
+          <div className="callout" style={{ marginTop: 16 }}>
+            <h2 className="sectionTitle" style={{ marginBottom: 6 }}>
+              {matchState.outcome === "you_win" ? "YOU WON THE MATCH" : "YOU LOST THE MATCH"}
+            </h2>
+            <p className="sectionSub" style={{ marginBottom: 0 }}>
+              Refresh the page to start a new match.
+            </p>
+          </div>
+        )}
       </div>
-
-      <hr />
-
-      {/* =========================
-          BATSMEN
-      ========================= */}
-      <p>
-        🟢 Striker: {striker.name} — {striker.runs} ({striker.balls})
-      </p>
-      <ConfidenceBar value={striker.confidence} />
-
-      <p>
-        🔵 Non-Striker: {nonStriker.name} — {nonStriker.runs} ({nonStriker.balls})
-      </p>
-      <ConfidenceBar value={nonStriker.confidence} />
-
-
-      {/* =========================
-          COMMENTARY
-      ========================= */}
-      {lastBall && (
-        <div
-          style={{
-            marginTop: "15px",
-            padding: "10px",
-            background: "#f9f9f9",
-            borderLeft: "4px solid #3498db"
-          }}
-        >
-          <strong>Last Ball:</strong> {lastBall.outcome.toUpperCase()}
-          <br />
-          <em>{lastBall.commentary}</em>
-        </div>
-      )}
-
-      {/* =========================
-          CONTROLS
-      ========================= */}
-      {!matchState.matchOver && (
-        <div style={{ marginTop: "20px" }}>
-          <button onClick={() => playBall("attack")} disabled={playing}>
-            Attack
-          </button>{" "}
-          <button onClick={() => playBall("rotate")} disabled={playing}>
-            Rotate
-          </button>{" "}
-          <button onClick={() => playBall("defend")} disabled={playing}>
-            Defend
-          </button>{" "}
-          <button onClick={() => playBall("risk")} disabled={playing}>
-            Risk All
-          </button>
-        </div>
-      )}
-
-      {/* =========================
-          RESULT
-      ========================= */}
-      {matchState.matchOver && (
-        <h1 style={{ marginTop: "30px" }}>
-          {matchState.outcome === "you_win"
-            ? "🎉 YOU WON THE MATCH"
-            : "❌ YOU LOST THE MATCH"}
-        </h1>
-      )}
     </div>
   );
 }
@@ -161,22 +158,12 @@ function MatchScreen() {
 function ConfidenceBar({ value = 0 }) {
   const percent = Math.round(value * 100);
   return (
-    <div
-      style={{
-        width: "200px",
-        height: "8px",
-        background: "#eee",
-        borderRadius: "4px",
-        marginBottom: "8px"
-      }}
-    >
+    <div className="barOuter" style={{ height: 10 }}>
       <div
+        className="barInner"
         style={{
           width: `${percent}%`,
-          height: "100%",
-          background: "#3498db",
-          borderRadius: "4px",
-          transition: "width 0.3s ease"
+          background: "rgba(56, 189, 248, 0.95)",
         }}
       />
     </div>

@@ -41,31 +41,57 @@ function TeamSelect() {
   };
 
   return (
-    <div>
-      <h2>Select Teams</h2>
+    <div className="card">
+      <div className="cardInner">
+        <h2 className="sectionTitle">Select teams</h2>
+        <p className="sectionSub">Pick your team and the opponent team.</p>
 
-      <select value={myTeamLocal} onChange={(e) => setMyTeamLocal(e.target.value)}>
-        <option value="">Select My Team</option>
-        {teams.map(t => (
-          <option key={t} value={t}>{t}</option>
-        ))}
-      </select>
+        <div className="grid2">
+          <div className="field">
+            <div className="label">My team</div>
+            <select
+              className="select"
+              value={myTeamLocal}
+              onChange={(e) => setMyTeamLocal(e.target.value)}
+              disabled={loading}
+            >
+              <option value="">Select My Team</option>
+              {teams.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <select
-        value={opponentTeamLocal}
-        onChange={(e) => setOpponentTeamLocal(e.target.value)}
-      >
-        <option value="">Select Opponent Team</option>
-        {teams.map(t => (
-          <option key={t} value={t}>{t}</option>
-        ))}
-      </select>
+          <div className="field">
+            <div className="label">Opponent team</div>
+            <select
+              className="select"
+              value={opponentTeamLocal}
+              onChange={(e) => setOpponentTeamLocal(e.target.value)}
+              disabled={loading}
+            >
+              <option value="">Select Opponent Team</option>
+              {teams.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-      <br /><br />
-
-      <button onClick={handleContinue} disabled={loading}>
-        {loading ? "Loading..." : "Continue"}
-      </button>
+        <div className="rowWrap" style={{ marginTop: 16 }}>
+          <span className="pill">
+            Tip: Choose two different teams
+          </span>
+          <span className="spacer" />
+          <button className="btn btnPrimary" onClick={handleContinue} disabled={loading}>
+            {loading ? "Loading..." : "Continue"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
